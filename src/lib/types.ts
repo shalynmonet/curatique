@@ -76,6 +76,12 @@ export interface PayoutRecord {
   createdAt: string;
 }
 
+export interface StoreQuery {
+  collection: string;
+  q: string;
+  next: string | null;
+}
+
 export interface Store {
   slug: string;
   niche: string;
@@ -89,6 +95,8 @@ export interface Store {
   status: "draft" | "live";
   launch?: { orderId: string; captureId?: string; amount: string; paidAt: string; payer?: string };
   products: RankedProduct[];
+  /** Channel3 searches behind the catalog; `next` is the page token used to curate more on demand. */
+  queries?: StoreQuery[];
   payouts: PayoutRecord[];
   createdAt: string;
   flagship?: boolean;

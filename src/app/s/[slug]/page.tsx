@@ -4,7 +4,8 @@ import { AgentChat } from "@/components/AgentChat";
 import { AffiliateDisclosure } from "@/components/Disclosure";
 import { patternCss } from "@/components/pattern";
 import { PayPalVerifier } from "@/components/PayPalVerifier";
-import { ProductCard } from "@/components/ProductCard";
+import { ProductGrid } from "@/components/ProductGrid";
+import { INITIAL_PAGE } from "@/lib/catalog";
 import { getStore } from "@/lib/stores";
 
 export const dynamic = "force-dynamic";
@@ -17,10 +18,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
   const t = store.theme;
   const unknownDomains = [...new Set(store.products.filter((p) => p.paypal === "unknown" && p.domain).map((p) => p.domain!))];
   const paypalCount = store.products.filter((p) => p.paypal === "accepts").length;
-  const byCollection = store.collections
-    .map((c) => ({ name: c, items: store.products.filter((p) => p.collection === c) }))
-    .filter((c) => c.items.length);
-  const uncategorized = store.products.filter((p) => !p.collection || !store.collections.includes(p.collection));
+  const canGrow = !store.queries?.length || store.queries.some((q) => q.next);
   const suggestions = [
     `Show me the best ${store.niche} pieces under $150`,
     `I need a gift — what's your favorite item I can pay for with PayPal?`,
@@ -47,7 +45,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
             <p className="mt-2 text-lg opacity-80">{store.heroCopy}</p>
             <p className="mt-4 text-sm opacity-70">{store.tagline}</p>
             <div className="mt-4 text-xs opacity-60">
-              {store.products.length} curated pieces · {paypalCount} payable with PayPal · curated by {store.founder.name}
+              {store.products.length}+ curated pieces · {paypalCount} payable with PayPal · curated by {store.founder.name}
             </div>
           </div>
         </div>
@@ -58,16 +56,11 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
 
         {unknownDomains.length > 0 && <PayPalVerifier domains={unknownDomains} />}
 
-        {[...byCollection, ...(uncategorized.length ? [{ name: "More finds", items: uncategorized }] : [])].map((c) => (
-          <section key={c.name}>
-            <h2 className="font-display mb-4 text-2xl">{c.name}</h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {c.items.map((p) => (
-                <ProductCard key={p.id} p={p} slug={store.slug} />
-              ))}
-            </div>
-          </section>
-        ))}
+        <ProductGrid
+          slug={store.slug}
+          initial={store.products.slice(0, INITIAL_PAGE)}
+          initialHasMore={store.products.length > INITIAL_PAGE || canGrow}
+        />
 
         <section className="rounded-xl bg-white/80 p-6 text-sm text-neutral-700">
           <h3 className="font-display mb-2 text-lg text-black">About {store.name}</h3>

@@ -1,7 +1,7 @@
 import "server-only";
 import type Anthropic from "@anthropic-ai/sdk";
 import { getProduct, searchProducts, similarProducts } from "./channel3";
-import { anthropic, BETAS, model, textOf } from "./claude";
+import { anthropic, fallbackParams, model, textOf } from "./claude";
 import { paypalStatuses } from "./paypal-merchants";
 import { rankProducts } from "./ranking";
 import type { RankedProduct, Store } from "./types";
@@ -95,8 +95,7 @@ export async function runShoppingAgent(store: Store, history: { role: "user" | "
     const msg = await anthropic.beta.messages.create({
       model: model(),
       max_tokens: 16000,
-      betas: BETAS,
-      fallbacks: "default",
+      ...fallbackParams(),
       output_config: { effort: "low" },
       system,
       tools,

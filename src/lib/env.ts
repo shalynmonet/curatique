@@ -10,7 +10,10 @@ export const env = {
   paypalClientId: () => req("PAYPAL_CLIENT_ID"),
   paypalSecret: () => req("PAYPAL_CLIENT_SECRET"),
   paypalBase: () => process.env.PAYPAL_API_BASE || "https://api-m.sandbox.paypal.com",
-  launchFee: () => process.env.LAUNCH_FEE_USD || "29.00",
+  launchFee: () => process.env.LAUNCH_FEE_USD || "27.00",
   dataDir: () => process.env.DATA_DIR || ".data",
-  claudeModel: () => process.env.CLAUDE_MODEL || "claude-opus-5-5",
+  /** Concierge chat + PayPal merchant checks (frequent, latency-sensitive). */
+  claudeModel: () => process.env.CLAUDE_MODEL || "claude-haiku-5-5",
+  /** Brand design + catalog curation (occasional, judgment-heavy). */
+  curatorModel: () => process.env.CLAUDE_CURATOR_MODEL || "claude-sonnet-5-5",
 };

@@ -35,19 +35,30 @@ function filters(o: SearchOpts) {
   return f;
 }
 
-/** POST /v1/search */
-export async function searchProducts(query: string, o: SearchOpts = {}): Promise<C3Product[]> {
-  const data = await c3<{ products: C3Product[] }>("/search", {
+/** POST /v1/search — one page of results plus the token for the next page. */
+export async function searchPage(
+  query: string,
+  o: SearchOpts & { pageToken?: string | null } = {},
+): Promise<{ products: C3Product[]; next: string | null }> {
+  const body = o.pageToken
+    ? { page_token: o.pageToken }
+    : {
+        query,
+        limit: Math.min(o.limit ?? 20, 30),
+        filters: filters(o),
+        config: { country: "US", currency: "USD", language: "en" },
+      };
+  const data = await c3<{ products: C3Product[]; next_page_token?: string | null }>("/search", {
     method: "POST",
     userId: o.userId,
-    body: JSON.stringify({
-      query,
-      limit: Math.min(o.limit ?? 20, 30),
-      filters: filters(o),
-      config: { country: "US", currency: "USD", language: "en" },
-    }),
+    body: JSON.stringify(body),
   });
-  return data.products ?? [];
+  return { products: data.products ?? [], next: data.next_page_token ?? null };
+}
+
+/** POST /v1/search */
+export async function searchProducts(query: string, o: SearchOpts = {}): Promise<C3Product[]> {
+  return (await searchPage(query, o)).products;
 }
 
 /**

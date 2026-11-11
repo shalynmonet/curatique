@@ -18,9 +18,19 @@ async function flagshipSeed(): Promise<Store | null> {
   }
 }
 
+/**
+ * The flagship lives in the committed seed file; once it's modified at runtime (payouts, catalog
+ * growth) a copy is stored on disk. A newer committed seed wins over an older disk copy, keeping payouts.
+ */
+function resolveFlagship(stored: Store | undefined, seed: Store | null): Store | null {
+  if (!seed) return stored ?? null;
+  if (!stored || seed.createdAt > stored.createdAt) return { ...seed, payouts: stored?.payouts ?? seed.payouts ?? [] };
+  return stored;
+}
+
 export async function getStore(slug: string): Promise<Store | null> {
   const all = await readJSON<Record<string, Store>>("stores", {});
-  const found = all[slug] ?? (slug === FLAGSHIP_SLUG ? await flagshipSeed() : null);
+  const found = slug === FLAGSHIP_SLUG ? resolveFlagship(all[slug], await flagshipSeed()) : all[slug] ?? null;
   if (!found) return null;
   let s: Store = found;
   // Flagship payouts go to the sandbox receiver configured for this deploy.
@@ -31,7 +41,7 @@ export async function getStore(slug: string): Promise<Store | null> {
 
 export async function listStores(): Promise<Store[]> {
   const all = await readJSON<Record<string, Store>>("stores", {});
-  const flagship = all[FLAGSHIP_SLUG] ?? (await flagshipSeed());
+  const flagship = resolveFlagship(all[FLAGSHIP_SLUG], await flagshipSeed());
   const list = Object.values(all).filter((s) => s.slug !== FLAGSHIP_SLUG);
   return [...(flagship ? [flagship] : []), ...list.sort((a, b) => b.createdAt.localeCompare(a.createdAt))];
 }
@@ -52,7 +62,7 @@ export async function patchStore(slug: string, fn: (s: Store) => Store): Promise
   let out: Store | null = null;
   const seed = slug === FLAGSHIP_SLUG ? await flagshipSeed() : null;
   await updateJSON<Record<string, Store>>("stores", {}, (cur) => {
-    const s = cur[slug] ?? seed;
+    const s = slug === FLAGSHIP_SLUG ? resolveFlagship(cur[slug], seed) : cur[slug];
     if (!s) throw new Error(`Store ${slug} not found`);
     out = fn(s);
     return { ...cur, [slug]: out };

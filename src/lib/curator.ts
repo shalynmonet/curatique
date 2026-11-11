@@ -1,9 +1,9 @@
 import "server-only";
-import { searchProducts } from "./channel3";
-import { claudeJSON } from "./claude";
+import { searchPage } from "./channel3";
+import { claudeJSON, curatorModel } from "./claude";
 import { checkDomain } from "./paypal-merchants";
 import { rankProducts, rerank } from "./ranking";
-import type { RankedProduct, Store, StoreTheme } from "./types";
+import type { C3Product, RankedProduct, Store, StoreQuery, StoreTheme } from "./types";
 
 interface Plan {
   name: string;
@@ -37,7 +37,7 @@ const planSchema = {
     },
     collections: {
       type: "array",
-      description: "3-5 collections; each has 2-3 concrete product search queries a shopping search engine understands",
+      description: "4-5 collections; each has 3-4 distinct, concrete product search queries a shopping search engine understands (vary item type, gender and price tier so the catalog can grow past 100 items)",
       items: {
         type: "object",
         additionalProperties: false,
@@ -84,59 +84,25 @@ export async function buildStore(input: { niche: string; founderName: string; pa
       "Search queries must be concrete product searches (e.g. 'houndstooth wool blazer women') that will return real purchasable products — never vague themes.",
     user: `Signature niche: "${input.niche}". Founder: ${input.founderName}. Design the store brand, theme and collections.`,
     schema: planSchema,
+    model: curatorModel(),
     effort: "medium",
   });
 
   const slug = input.slug ?? slugify(plan.name);
+  const queries: StoreQuery[] = plan.collections.flatMap((c) => c.queries.slice(0, 4).map((q) => ({ collection: c.name, q, next: null })));
 
-  // Run every search in parallel against Channel3.
-  const searches = plan.collections.flatMap((c) => c.queries.slice(0, 3).map((q) => ({ collection: c.name, q })));
-  const results = await Promise.allSettled(searches.map((s) => searchProducts(s.q, { limit: 12, userId: slug })));
-  const seen = new Map<string, { p: Awaited<ReturnType<typeof searchProducts>>[number]; collection: string; q: string }>();
-  results.forEach((r, i) => {
-    if (r.status !== "fulfilled") return;
-    for (const p of r.value) if (!seen.has(p.id)) seen.set(p.id, { p, collection: searches[i].collection, q: searches[i].q });
-  });
-  if (seen.size === 0) {
-    const firstErr = results.find((r) => r.status === "rejected") as PromiseRejectedResult | undefined;
-    throw new Error(`Channel3 returned no products for this niche. ${firstErr ? String(firstErr.reason) : ""}`);
-  }
+  // Run every search in parallel against Channel3 (30 per query = the API max per page).
+  const { candidates, queries: advanced, errors } = await fetchCandidates(queries, new Set(), slug, true);
+  if (candidates.length === 0) throw new Error(`Channel3 returned no products for this niche. ${errors[0] ?? ""}`);
 
-  const ranked = await rankProducts([...seen.values()].map((v) => v.p));
-  const byId = new Map(ranked.map((r) => [r.id, r]));
-
-  const candidates = ranked.map((r) => ({
-    id: r.id,
-    title: r.title,
-    brand: r.brand,
-    price: r.price,
-    merchant: r.domain,
-    pays_with_paypal: r.paypal,
-    found_via: seen.get(r.id)?.q,
-    materials: seen.get(r.id)?.p.materials?.slice(0, 3),
-  }));
-
-  const { picks } = await claudeJSON<{ picks: { id: string; collection: string; note: string }[] }>({
-    system:
-      "You are a ruthless niche merchandiser. From candidate products, select only items that truly fit the store's signature niche " +
-      "(e.g. for houndstooth: the item itself must be houndstooth/dogstooth patterned — reject plain items that merely matched a keyword). " +
-      "Aim for 16-28 picks spread across the collections, varied in brand, merchant and price. " +
-      "Select purely on niche fit, quality and variety — do NOT drop items because of their merchant or payment method; PayPal-priority ranking is applied afterwards. " +
-      "Use only ids from the candidate list and only the given collection names.",
-    user: JSON.stringify({
-      niche: input.niche,
-      store: plan.name,
-      collections: plan.collections.map((c) => c.name),
-      candidates,
-    }),
-    schema: pickSchema,
+  const products = await curate({
+    niche: input.niche,
+    storeName: plan.name,
+    collections: plan.collections.map((c) => c.name),
+    candidates,
+    target: "Aim for 55-75 picks",
     effort: "medium",
   });
-
-  let products: RankedProduct[] = picks
-    .filter((p) => byId.has(p.id))
-    .map((p) => ({ ...byId.get(p.id)!, collection: p.collection, note: p.note }));
-  products = await rerank(products);
 
   const store: Store = {
     slug,
@@ -150,13 +116,92 @@ export async function buildStore(input: { niche: string; founderName: string; pa
     founder: { name: input.founderName, paypalEmail: input.paypalEmail },
     status: "draft",
     products,
+    queries: advanced,
     payouts: [],
     createdAt: new Date().toISOString(),
   };
+  verifyUnknownMerchants(products);
+  return store;
+}
 
-  // Background: have the agent verify PayPal acceptance for the catalog's unknown merchants.
+interface Candidate {
+  product: C3Product;
+  q: string;
+}
+
+/**
+ * Run the store's Channel3 searches (first page, or the next page via page_token) and return
+ * products not already in the catalog. `next` on each query is advanced; exhausted queries get null.
+ */
+export async function fetchCandidates(queries: StoreQuery[], exclude: Set<string>, slug: string, first = false) {
+  const active = first ? queries : queries.filter((q) => q.next);
+  const results = await Promise.allSettled(
+    active.map((q) => searchPage(q.q, { limit: 30, userId: slug, pageToken: first ? null : q.next })),
+  );
+  const out = new Map<string, Candidate>();
+  const errors: string[] = [];
+  const nextByQuery = new Map<StoreQuery, string | null>();
+  results.forEach((r, i) => {
+    if (r.status !== "fulfilled") {
+      errors.push(String(r.reason));
+      return;
+    }
+    nextByQuery.set(active[i], r.value.next);
+    for (const p of r.value.products) if (!exclude.has(p.id) && !out.has(p.id)) out.set(p.id, { product: p, q: active[i].q });
+  });
+  const advanced = queries.map((q) => (nextByQuery.has(q) ? { ...q, next: nextByQuery.get(q) ?? null } : first ? { ...q, next: null } : q));
+  return { candidates: [...out.values()], queries: advanced, errors };
+}
+
+/** Claude selects the on-niche items from Channel3 candidates and writes curator notes. */
+export async function curate(opts: {
+  niche: string;
+  storeName: string;
+  collections: string[];
+  candidates: Candidate[];
+  target: string;
+  effort: "low" | "medium";
+}): Promise<RankedProduct[]> {
+  const ranked = await rankProducts(opts.candidates.map((c) => c.product));
+  const byId = new Map(ranked.map((r) => [r.id, r]));
+  const meta = new Map(opts.candidates.map((c) => [c.product.id, c]));
+
+  const { picks } = await claudeJSON<{ picks: { id: string; collection: string; note: string }[] }>({
+    system:
+      "You are a ruthless niche merchandiser. From candidate products, select only items that truly fit the store's signature niche " +
+      "(e.g. for houndstooth: the item itself must be houndstooth/dogstooth patterned — reject plain items that merely matched a keyword). " +
+      `${opts.target}, spread across the collections, varied in brand, merchant and price; never pad with off-niche items — fewer is fine if the candidates are weak. ` +
+      "Select purely on niche fit, quality and variety — do NOT drop items because of their merchant or payment method; PayPal-priority ranking is applied afterwards. " +
+      "Skip near-duplicates (same item in another colorway or size listing). Use only ids from the candidate list and only the given collection names.",
+    user: JSON.stringify({
+      niche: opts.niche,
+      store: opts.storeName,
+      collections: opts.collections,
+      candidates: ranked.map((r) => ({
+        id: r.id,
+        title: r.title,
+        brand: r.brand,
+        price: r.price,
+        merchant: r.domain,
+        found_via: meta.get(r.id)?.q,
+        materials: meta.get(r.id)?.product.materials?.slice(0, 3),
+      })),
+    }),
+    schema: pickSchema,
+    model: curatorModel(),
+    effort: opts.effort,
+    maxTokens: 64000,
+  });
+
+  const seen = new Set<string>();
+  const products = picks
+    .filter((p) => byId.has(p.id) && !seen.has(p.id) && seen.add(p.id))
+    .map((p) => ({ ...byId.get(p.id)!, collection: p.collection, note: p.note }));
+  return rerank(products);
+}
+
+/** Background: have the agent verify PayPal acceptance for unknown merchants in a batch of products. */
+export function verifyUnknownMerchants(products: RankedProduct[]) {
   const unknown = [...new Set(products.filter((p) => p.paypal === "unknown" && p.domain).map((p) => p.domain!))].slice(0, 8);
   void Promise.allSettled(unknown.map((d) => checkDomain(d)));
-
-  return store;
 }

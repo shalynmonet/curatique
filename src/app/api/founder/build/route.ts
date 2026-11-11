@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { friendlyError } from "@/lib/claude";
 import { z } from "zod";
 import { buildStore, slugify } from "@/lib/curator";
 import { saveStore, uniqueSlug } from "@/lib/stores";
@@ -21,6 +22,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ slug: store.slug, name: store.name, products: store.products.length });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Build failed" }, { status: 500 });
+    return NextResponse.json({ error: friendlyError(e, "Build failed") }, { status: 500 });
   }
 }

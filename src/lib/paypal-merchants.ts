@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { anthropic, BETAS, model, textOf } from "./claude";
+import { anthropic, fallbackParams, model, textOf, webTools } from "./claude";
 import { readJSON, updateJSON } from "./db";
 import type { PayPalStatus } from "./types";
 
@@ -115,13 +115,9 @@ export async function checkDomain(rawDomain: string): Promise<MerchantRecord> {
       const msg = await anthropic.beta.messages.create({
         model: model(),
         max_tokens: 16000,
-        betas: BETAS,
-        fallbacks: "default",
+        ...fallbackParams(),
         output_config: { effort: "low" },
-        tools: [
-          { type: "web_search_20260209", name: "web_search", max_uses: 3 },
-          { type: "web_fetch_20260209", name: "web_fetch", max_uses: 3 },
-        ],
+        tools: [...webTools(3)],
         messages,
       });
       text = textOf(msg);

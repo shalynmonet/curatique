@@ -13,8 +13,12 @@ services:
         value: /var/data/curatique
       - key: PAYPAL_API_BASE
         value: https://api-m.sandbox.paypal.com
+      - key: CLAUDE_MODEL
+        value: claude-haiku-5-5
+      - key: CLAUDE_CURATOR_MODEL
+        value: claude-sonnet-5-5
       - key: LAUNCH_FEE_USD
-        value: "29.00"
+        value: "27.00"
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: CHANNEL3_API_KEY

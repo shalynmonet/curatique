@@ -25,7 +25,8 @@
 
 | Tool / model | How it's used |
 |---|---|
-| **Claude Opus 5.5** (`claude-opus-5-5`, Anthropic Messages API via `@anthropic-ai/sdk`) | (1) **Shopping agent** (`src/lib/agent.ts`): tool-use loop with `search_products`, `get_product_details`, `find_similar`, `show_products`, all backed by real Channel3 calls. (2) **Niche curation** (`src/lib/curator.ts`): structured-output calls that design the brand/theme and search plan, then select on-niche items from the Channel3 candidates and write curator notes. (3) **PayPal merchant checks** (`src/lib/paypal-merchants.ts`): Claude with the server-side `web_search` / `web_fetch` tools reads a retailer's payment FAQ and decides whether it accepts PayPal. Server-side refusal fallbacks (`fallbacks: "default"`) are enabled. |
+| **Claude Haiku 5.5** (`claude-haiku-5-5`, Anthropic Messages API via `@anthropic-ai/sdk`) | Fast, low-cost model for the frequent calls. (1) **Shopping agent** (`src/lib/agent.ts`): tool-use loop with `search_products`, `get_product_details`, `find_similar`, `show_products`, all backed by real Channel3 calls. (2) **PayPal merchant checks** (`src/lib/paypal-merchants.ts`): Claude with the server-side `web_search` / `web_fetch` tools reads a retailer's payment FAQ and decides whether it accepts PayPal. Set with `CLAUDE_MODEL`. |
+| **Claude Sonnet 5.5** (`claude-sonnet-5-5`) | Judgment-heavy, occasional calls. **Niche curation** (`src/lib/curator.ts`): structured-output calls that design the brand/theme and Channel3 search plan, then select only on-niche items from hundreds of Channel3 candidates and write curator notes — at store build and whenever “Load 25 more” needs fresh items. Server-side refusal fallbacks (`fallbacks: "default"`) are enabled. Set with `CLAUDE_CURATOR_MODEL`. In testing, Haiku let roughly 1 in 3 off-niche items (e.g. herringbone) into a houndstooth catalog, while Sonnet's picks were all on-niche — hence the split. |
 | **Channel3 API** (`api.trychannel3.com/v1`) | `POST /search` (catalog building + agent search), `GET /products/{id}` with `website_ids` (enrichment + PayPal-merchant buy URL), `POST /similar` (recommendations), `POST /lookup` (URL enrichment helper). Buy URLs carry `x-user-id` = store slug for attribution; offers with `max_commission_rate > 0` are shown as affiliate links. |
 | **PayPal REST APIs (sandbox)** | Orders v2 + JS SDK buttons for Checkout; Payouts v1 for founder payouts; OAuth2 client credentials. |
 | **Next.js 15 + TypeScript + Tailwind** | App Router pages and API routes. |
@@ -61,10 +62,11 @@ Other scripts: `npm run build`, `npm run start`, `npm run typecheck`, `npm run l
 | `PAYPAL_CLIENT_ID` | yes | PayPal REST app (sandbox) client id; also used by the JS SDK buttons |
 | `PAYPAL_CLIENT_SECRET` | yes | PayPal REST app secret |
 | `PAYPAL_API_BASE` | no | Defaults to `https://api-m.sandbox.paypal.com` |
-| `LAUNCH_FEE_USD` | no | Launch fee, default `29.00` |
+| `LAUNCH_FEE_USD` | no | Launch fee, default `27.00` |
 | `FLAGSHIP_PAYOUT_EMAIL` | no | Sandbox personal account that receives flagship-store payouts |
 | `DATA_DIR` | no | JSON data store directory, default `.data` |
-| `CLAUDE_MODEL` | no | Defaults to `claude-opus-5-5` |
+| `CLAUDE_MODEL` | no | Chat + merchant checks, default `claude-haiku-5-5` |
+| `CLAUDE_CURATOR_MODEL` | no | Brand + catalog curation, default `claude-sonnet-5-5` |
 
 ## Deploy to Render
 

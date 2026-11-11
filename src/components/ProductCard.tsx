@@ -23,7 +23,10 @@ export function ProductCard({ p, slug, compact = false }: { p: RankedProduct; sl
         </div>
       </Link>
       <div className="flex flex-1 flex-col gap-1 p-3">
-        {p.brand && <div className="text-[11px] uppercase tracking-wider text-neutral-500">{p.brand}</div>}
+        <div className="flex items-center justify-between gap-2 text-[11px] uppercase tracking-wider text-neutral-500">
+          <span className="truncate">{p.brand}</span>
+          {!compact && p.collection && <span className="shrink-0 normal-case tracking-normal text-neutral-400">{p.collection}</span>}
+        </div>
         <Link href={`/s/${slug}/p/${encodeURIComponent(p.id)}`} className="line-clamp-2 text-sm font-medium leading-snug hover:underline">
           {p.title}
         </Link>

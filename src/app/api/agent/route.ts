@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { friendlyError } from "@/lib/claude";
 import { z } from "zod";
 import { runShoppingAgent } from "@/lib/agent";
 import { getStore } from "@/lib/stores";
@@ -19,6 +20,6 @@ export async function POST(req: Request) {
     return NextResponse.json(await runShoppingAgent(store, parsed.data.messages));
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Agent failed" }, { status: 500 });
+    return NextResponse.json({ error: friendlyError(e, "Agent failed") }, { status: 500 });
   }
 }
