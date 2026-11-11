@@ -11,6 +11,8 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  // Product images come from arbitrary merchant CDNs, so we use plain <img>.
+  { rules: { "@next/next/no-img-element": "off" } },
   {
     ignores: [
       "node_modules/**",

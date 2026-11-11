@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: curatique
+    runtime: node
+    plan: starter # persistent disks need a paid instance; use "free" and drop `disk` if you accept ephemeral data
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start -- -p $PORT
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATA_DIR
+        value: /var/data/curatique
+      - key: PAYPAL_API_BASE
+        value: https://api-m.sandbox.paypal.com
+      - key: LAUNCH_FEE_USD
+        value: "29.00"
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CHANNEL3_API_KEY
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: FLAGSHIP_PAYOUT_EMAIL
+        sync: false
+    disk:
+      name: curatique-data
+      mountPath: /var/data
+      sizeGB: 1
