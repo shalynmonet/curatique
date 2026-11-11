@@ -79,8 +79,8 @@ Use the PayPal **sandbox** — no real money moves.
 
 1. In [developer.paypal.com](https://developer.paypal.com) → **Testing Tools → Sandbox Accounts** you have a default **Business** account (the merchant/app) and a **Personal** account (the buyer).
 2. **Sandbox buyer test credentials** (for the PayPal Checkout popup when launching a store):
-   - Email: `<sandbox-personal-account-email>` — e.g. `sb-xxxxx@personal.example.com`
-   - Password: `<sandbox-personal-account-password>`
+   - Email: `sb-7ixdq53858600@personal.example.com`
+   - Password: `}_G-a8lK`
 
    _(Fill these in from your sandbox Personal account → View/Edit account. These are sandbox-only test credentials.)_
 3. **Launch flow:** `/founder` → enter a niche, name, and a sandbox Personal email for payouts → **Build my store with AI** → on the dashboard click the PayPal button → log in with the sandbox buyer → pay → store flips to **LIVE** and the capture id is shown.
