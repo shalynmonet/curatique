@@ -40,7 +40,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
         style={{ backgroundImage: store.heroImage ? `url("${store.heroImage}")` : patternCss(t), backgroundColor: t.primary }}
       >
         <div className="mx-auto max-w-6xl px-4 py-14 sm:py-20">
-          <div className="inline-block max-w-xl rounded-xl p-6 shadow-lg sm:p-8" style={{ background: t.background, color: t.text }}>
+          <div className="mx-auto max-w-xl rounded-xl p-6 text-center shadow-lg sm:p-8" style={{ background: t.background, color: t.text }}>
             <div className="text-[11px] uppercase tracking-[0.25em]" style={{ color: t.accent }}>
               {store.niche}
             </div>

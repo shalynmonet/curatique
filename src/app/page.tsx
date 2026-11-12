@@ -11,14 +11,14 @@ export default async function Home() {
     <div className="min-h-screen">
       <header className="bg-cover bg-center" style={{ backgroundImage: 'url("/brand/landing-houndstooth.webp")', backgroundColor: "#111111" }}>
         <div className="mx-auto max-w-6xl px-4 py-20">
-          <div className="max-w-2xl rounded-2xl bg-[#faf9f6] p-8 shadow-xl sm:p-10">
+          <div className="mx-auto max-w-2xl rounded-2xl bg-[#faf9f6] p-8 text-center shadow-xl sm:p-10">
             <div className="text-xs uppercase tracking-[0.3em] text-neutral-500">Curatique</div>
             <h1 className="font-display mt-3 text-5xl leading-tight">Signature-niche stores, curated by AI, paid with PayPal.</h1>
             <p className="mt-4 text-neutral-600">
               Founders name a niche. A Claude agent builds the catalog from Channel3&apos;s live product graph and brands the storefront. Shoppers get an AI
               concierge that puts PayPal-accepting merchants first. Founders launch with PayPal Checkout and get paid with PayPal Payouts.
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link href={`/s/${FLAGSHIP_SLUG}`} className="rounded-md bg-black px-5 py-3 text-sm font-semibold text-white hover:bg-neutral-800">
                 Shop Houndstooth etc.
               </Link>
