@@ -4,7 +4,7 @@ import { LaunchCheckout } from "@/components/LaunchCheckout";
 import { PayoutPanel } from "@/components/PayoutPanel";
 import { PayPalBadge } from "@/components/PayPalBadge";
 import { money } from "@/components/ProductCard";
-import { sampleEarnings } from "@/lib/earnings";
+import { CHANNEL3_PAYOUT_SHARE, sampleEarnings } from "@/lib/earnings";
 import { env } from "@/lib/env";
 import { getStore } from "@/lib/stores";
 
@@ -73,8 +73,9 @@ export default async function FounderDashboard({ params }: { params: Promise<{ s
           <span className="rounded bg-amber-400 px-2 py-1 text-xs font-bold uppercase tracking-wide text-black">Demo data — simulated earnings</span>
         </div>
         <p className="mt-1 text-xs text-amber-900">
-          These commission rows are sample data generated from your catalog for the demo. No real sales have occurred. The payout below is a real PayPal
-          Payouts API call in the sandbox.
+          No real sales have occurred, so these sales are simulated. Only items with a real Channel3 affiliate commission are used ({earnings.affiliateItems} of{" "}
+          {store.products.length} in your catalog), at their real Channel3 rate, and your commission is the {CHANNEL3_PAYOUT_SHARE * 100}% share Channel3 pays
+          out. Quantities and dates are simulated. The payout below is a real PayPal Payouts API call in the sandbox.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <Stat label="Pending (demo)" value={money(earnings.pending)} />
@@ -92,8 +93,8 @@ export default async function FounderDashboard({ params }: { params: Promise<{ s
               <th>Product</th>
               <th>Merchant</th>
               <th>Order</th>
-              <th>Rate</th>
-              <th>Commission</th>
+              <th>Channel3 rate</th>
+              <th>Your share (50%)</th>
               <th>Status</th>
             </tr>
           </thead>

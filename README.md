@@ -19,7 +19,7 @@
 
 **PayPal-priority ranking.** `paypal-merchants.ts` keeps a cached table of merchant domains, seeded with known PayPal-accepting retailers. For an unknown domain, a Claude agent with web search + web fetch reads the retailer's checkout / payment FAQ, returns a verdict with evidence, and the result is stored (see `/merchants`). Ranking = Channel3 relevance + a PayPal boost (`accepts` +0.6, `unknown` +0.15, `no` 0), so non-PayPal items still appear but rank lower. On product pages we call `GET /v1/products/{id}?website_ids=<PayPal domains>` so Channel3 returns a buy URL at a PayPal merchant.
 
-> **Sample affiliate earnings are demo data.** Commission rows on the founder dashboard are simulated from the store's catalog and are labeled **"Demo data — simulated earnings"** in the UI. The payout itself is a real PayPal Payouts sandbox call.
+> **Sample affiliate earnings are demo data.** No real sales have occurred, so sales on the founder dashboard are simulated and labeled **"Demo data — simulated earnings"** in the UI. To keep the numbers honest, only catalog items with a real Channel3 affiliate commission can "sell", at their real Channel3 rate, and the founder's commission is the 50% share Channel3 pays out ([Channel3 commissions FAQ](https://channel3.mintlify.dev/docs/faq/commissions.md)); quantities and dates are simulated. Every buy link is a tracked Channel3 link tagged with the store (`x-user-id`), so real sales would appear in Channel3's reporting API. The payout itself is a real PayPal Payouts sandbox call.
 
 ## Tools Used
 
