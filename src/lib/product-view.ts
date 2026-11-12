@@ -1,4 +1,5 @@
 import "server-only";
+import { looksLikeKids } from "./audience";
 import { getProduct, similarProducts } from "./channel3";
 import { paypalStatuses } from "./paypal-merchants";
 import { paypalDomainsFor, rankProducts, saneOffers } from "./ranking";
@@ -42,7 +43,12 @@ export async function getProductView(id: string, storeSlug?: string): Promise<Pr
   const best = offers.find((o) => o.availability !== "OutOfStock") ?? offers[0];
   let similar: RankedProduct[] = [];
   try {
-    similar = (await rankProducts(await similarProducts(id, { limit: 8, userId: storeSlug }))).slice(0, 8);
+    similar = (await rankProducts(await similarProducts(id, {
+          limit: 8,
+          userId: storeSlug,
+          // Recommendations stay in the viewed item's audience (adult item -> adult suggestions).
+          audience: { kids: looksLikeKids(product), gender: product.gender ?? undefined },
+        }))).slice(0, 8);
   } catch {
     /* recommendations are optional */
   }

@@ -28,7 +28,9 @@ export interface C3Product {
   description?: string | null;
   brands?: { id: string; name: string }[];
   images?: C3Image[];
-  category?: { slug: string; title: string } | null;
+  category?: { slug: string; title: string; path?: { slug: string; title: string }[] } | null;
+  gender?: "male" | "female" | null;
+  age?: "newborn" | "infant" | "toddler" | "kids" | "adult" | null;
   materials?: string[] | null;
   key_features?: string[] | null;
   offers?: C3Offer[];

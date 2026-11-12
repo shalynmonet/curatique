@@ -1,5 +1,6 @@
 import "server-only";
 import { searchPage } from "./channel3";
+import { AUDIENCE_RULE } from "./audience";
 import { claudeJSON, curatorModel } from "./claude";
 import { checkDomain } from "./paypal-merchants";
 import { rankProducts, rerank } from "./ranking";
@@ -81,7 +82,8 @@ export async function buildStore(input: { niche: string; founderName: string; pa
   const plan = await claudeJSON<Plan>({
     system:
       "You are Curatique's brand strategist and merchandiser. Founders give you a 'signature niche' and you design a focused, tasteful niche storefront. " +
-      "Search queries must be concrete product searches (e.g. 'houndstooth wool blazer women') that will return real purchasable products — never vague themes.",
+      "Search queries must be concrete product searches (e.g. 'houndstooth wool blazer women') that will return real purchasable products — never vague themes. " +
+      "Name the audience in apparel queries ('women's', 'men's'); only mention kids, girls, boys or baby if the niche is explicitly for children.",
     user: `Signature niche: "${input.niche}". Founder: ${input.founderName}. Design the store brand, theme and collections.`,
     schema: planSchema,
     model: curatorModel(),
@@ -172,7 +174,9 @@ export async function curate(opts: {
       "(e.g. for houndstooth: the item itself must be houndstooth/dogstooth patterned — reject plain items that merely matched a keyword). " +
       `${opts.target}, spread across the collections, varied in brand, merchant and price; never pad with off-niche items — fewer is fine if the candidates are weak. ` +
       "Select purely on niche fit, quality and variety — do NOT drop items because of their merchant or payment method; PayPal-priority ranking is applied afterwards. " +
-      "Skip near-duplicates (same item in another colorway or size listing). Use only ids from the candidate list and only the given collection names.",
+      "Skip near-duplicates (same item in another colorway or size listing). Use only ids from the candidate list and only the given collection names. " +
+      AUDIENCE_RULE.replace("the shopper or niche", "the store's niche") +
+      " Each candidate's `for` field shows Channel3's audience tags and category — reject any kids', baby or toddler item unless the niche is for children.",
     user: JSON.stringify({
       niche: opts.niche,
       store: opts.storeName,
@@ -185,6 +189,7 @@ export async function curate(opts: {
         merchant: r.domain,
         found_via: meta.get(r.id)?.q,
         materials: meta.get(r.id)?.product.materials?.slice(0, 3),
+        for: [meta.get(r.id)?.product.gender, meta.get(r.id)?.product.age, meta.get(r.id)?.product.category?.title].filter(Boolean).join(" / ") || undefined,
       })),
     }),
     schema: pickSchema,

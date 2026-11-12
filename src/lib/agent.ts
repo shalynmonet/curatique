@@ -2,6 +2,7 @@ import "server-only";
 import type Anthropic from "@anthropic-ai/sdk";
 import { getProduct, searchProducts, similarProducts } from "./channel3";
 import { anthropic, fallbackParams, model, textOf } from "./claude";
+import { AUDIENCE_RULE, audienceFor, type Audience } from "./audience";
 import { paypalStatuses } from "./paypal-merchants";
 import { rankProducts } from "./ranking";
 import type { RankedProduct, Store } from "./types";
@@ -84,11 +85,22 @@ export async function runShoppingAgent(store: Store, history: { role: "user" | "
     `Help the shopper find products that fit both their request and the store's niche. Use your tools to search the live catalog — ` +
     `don't invent products, prices or merchants. Prefer items whose merchant accepts PayPal (paypal: "accepts"); mention when an item can be paid with PayPal. ` +
     `Non-PayPal items are allowed when they are clearly the better fit — say so. ` +
+    `${AUDIENCE_RULE} Include the audience in your search queries (e.g. "women's holiday dress").\n` +
     `Finish by calling show_products with your picks, then give a short, warm answer (2-4 sentences, no markdown lists, no URLs).\n` +
     `The store's curated catalog (you may recommend these directly):\n` +
     JSON.stringify(store.products.slice(0, 40).map(compact));
 
   const messages: Msg[] = history.slice(-10).map((m) => ({ role: m.role, content: m.content }));
+
+  // Who the shopper is buying for: kids only if the shopper (or a kids-focused store niche) says so;
+  // gender from the search words first, then from what the shopper said.
+  const shopperText = history.filter((m) => m.role === "user").slice(-3).map((m) => m.content).join(" ");
+  const shopper = audienceFor(shopperText);
+  const kidsOk = shopper.kids || audienceFor(store.niche).kids;
+  const audienceOf = (query: string): Audience => {
+    const q = audienceFor(query);
+    return { kids: kidsOk && (q.kids || shopper.kids || audienceFor(store.niche).kids), gender: q.gender ?? shopper.gender };
+  };
   let reply = "";
 
   for (let turn = 0; turn < 8; turn++) {
@@ -124,13 +136,14 @@ export async function runShoppingAgent(store: Store, history: { role: "user" | "
                 minPrice: input.min_price as number | undefined,
                 maxPrice: input.max_price as number | undefined,
                 userId: store.slug,
+                audience: audienceOf(String(input.query)),
               }),
             );
             ranked.forEach((r) => pool.set(r.id, pool.get(r.id) ?? r));
             out = ranked.slice(0, 12).map(compact);
           } else if (u.name === "find_similar") {
             const ranked = await rankProducts(
-              await similarProducts(String(input.product_id), { limit: 10, maxPrice: input.max_price as number | undefined, userId: store.slug }),
+              await similarProducts(String(input.product_id), { limit: 10, maxPrice: input.max_price as number | undefined, userId: store.slug, audience: { kids: kidsOk, gender: shopper.gender } }),
             );
             ranked.forEach((r) => pool.set(r.id, pool.get(r.id) ?? r));
             out = ranked.map(compact);

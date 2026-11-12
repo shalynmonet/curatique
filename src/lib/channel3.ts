@@ -1,5 +1,6 @@
 import "server-only";
 import { env } from "./env";
+import { audienceFilters, audienceFor, fitsAudience, type Audience } from "./audience";
 import type { C3Product } from "./types";
 
 // Channel3 v1 API: https://channel3.ai/docs/api
@@ -25,10 +26,12 @@ export interface SearchOpts {
   minPrice?: number;
   maxPrice?: number;
   userId?: string;
+  /** Who the results are for. Defaults to what the query's words imply (adults unless kids are named). */
+  audience?: Audience;
 }
 
-function filters(o: SearchOpts) {
-  const f: Record<string, unknown> = { conditions: ["new"], availability: ["InStock"] };
+function filters(o: SearchOpts, a: Audience) {
+  const f: Record<string, unknown> = { conditions: ["new"], availability: ["InStock"], ...audienceFilters(a) };
   if (o.minPrice != null || o.maxPrice != null) {
     f.price = { ...(o.minPrice != null && { min_price: o.minPrice }), ...(o.maxPrice != null && { max_price: o.maxPrice }) };
   }
@@ -40,12 +43,13 @@ export async function searchPage(
   query: string,
   o: SearchOpts & { pageToken?: string | null } = {},
 ): Promise<{ products: C3Product[]; next: string | null }> {
+  const a = o.audience ?? audienceFor(query);
   const body = o.pageToken
     ? { page_token: o.pageToken }
     : {
         query,
         limit: Math.min(o.limit ?? 20, 30),
-        filters: filters(o),
+        filters: filters(o, a),
         config: { country: "US", currency: "USD", language: "en" },
       };
   const data = await c3<{ products: C3Product[]; next_page_token?: string | null }>("/search", {
@@ -53,7 +57,8 @@ export async function searchPage(
     userId: o.userId,
     body: JSON.stringify(body),
   });
-  return { products: data.products ?? [], next: data.next_page_token ?? null };
+  // Safety net: drop items Channel3 hasn't tagged that still look like the wrong audience.
+  return { products: (data.products ?? []).filter((p) => fitsAudience(p, a)), next: data.next_page_token ?? null };
 }
 
 /** POST /v1/search */
@@ -73,17 +78,18 @@ export async function getProduct(id: string, o: { websiteIds?: string[]; userId?
 
 /** POST /v1/similar — recommendations seeded by a product */
 export async function similarProducts(productId: string, o: SearchOpts = {}): Promise<C3Product[]> {
+  const a = o.audience ?? { kids: false };
   const data = await c3<{ products: C3Product[] }>("/similar", {
     method: "POST",
     userId: o.userId,
     body: JSON.stringify({
       product_id: productId,
       limit: Math.min(o.limit ?? 8, 30),
-      filters: filters(o),
+      filters: filters(o, a),
       config: { country: "US", currency: "USD", language: "en" },
     }),
   });
-  return data.products ?? [];
+  return (data.products ?? []).filter((p) => fitsAudience(p, a));
 }
 
 /** POST /v1/lookup — enrich any product URL into a full Channel3 product */
