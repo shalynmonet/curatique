@@ -5,7 +5,7 @@
 - **Shoppers** browse a branded niche storefront (flagship: **Houndstooth**) and chat with a Claude shopping agent that searches Channel3's live product catalog in real time. Merchants that accept PayPal rank first, carry a **Pay with PayPal** badge, and the Buy button points to a PayPal-accepting merchant whenever one sells the item.
 - **Founders** type a signature niche. A Claude agent designs the brand and theme, plans Channel3 searches, curates only on-niche items, and generates the storefront. Founders pay the launch fee with **PayPal Checkout** and receive affiliate earnings via **PayPal Payouts**.
 
-**Hosted demo:** https://curatique.onrender.com — flagship store: https://curatique.onrender.com/s/houndstooth
+**Hosted demo:** https://curatique.sha-i.com — flagship store: https://curatique.sha-i.com/s/houndstooth (also at https://curatique.onrender.com)
 
 ---
 
