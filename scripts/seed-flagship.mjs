@@ -24,7 +24,17 @@ if (!res.ok) {
 }
 const stores = JSON.parse(await fs.readFile(path.join(dataDir, "stores.json"), "utf8"));
 const built = stores[j.slug];
-const flagship = { ...built, niche: "Houndstooth", slug: "houndstooth", status: "live", flagship: true, payouts: [] };
+const flagship = {
+  ...built,
+  name: "Houndstooth etc.",
+  niche: "Houndstooth",
+  heroImage: "/brand/houndstooth-gold.jpg",
+  theme: { ...built.theme, primary: "#1A1A1A", accent: "#9C7A3C" },
+  slug: "houndstooth",
+  status: "live",
+  flagship: true,
+  payouts: [],
+};
 await fs.mkdir("src/data", { recursive: true });
 await fs.writeFile("src/data/flagship.json", JSON.stringify(flagship, null, 2));
 delete stores[j.slug];

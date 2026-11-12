@@ -92,6 +92,8 @@ export interface Store {
   about: string;
   heroCopy: string;
   theme: StoreTheme;
+  /** Optional hero background image (path under /public); replaces the generated pattern. */
+  heroImage?: string;
   collections: string[];
   founder: { name: string; paypalEmail: string };
   status: "draft" | "live";

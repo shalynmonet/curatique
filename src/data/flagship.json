@@ -1,13 +1,13 @@
 {
   "slug": "houndstooth",
   "niche": "Houndstooth",
-  "name": "Dogstooth & Co.",
+  "name": "Houndstooth etc.",
   "tagline": "Every check, curated: the houndstooth edit for wardrobe and home",
   "about": "At Curatique Studio, we've always believed the most enduring patterns are the ones that never ask for attention, yet always earn it. Houndstooth has moved from Scottish wool mills to couture runways, and we built this store to gather the best of it in one place. Coats, skirts, scarves, bags, and pieces for your home, all chosen for the crispness of the check and the quality of the make.",
   "heroCopy": "The Classic Check, Endlessly Reimagined",
   "theme": {
     "primary": "#1A1A1A",
-    "accent": "#B8322A",
+    "accent": "#9C7A3C",
     "background": "#F7F4EE",
     "text": "#141414",
     "pattern": "houndstooth"
@@ -1893,6 +1893,7 @@
     }
   ],
   "payouts": [],
-  "createdAt": "2026-11-11T18:36:48.476Z",
-  "flagship": true
+  "createdAt": "2026-11-12T14:16:07.515Z",
+  "flagship": true,
+  "heroImage": "/brand/houndstooth-gold.jpg"
 }

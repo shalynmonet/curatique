@@ -4,13 +4,12 @@ import { FLAGSHIP_SLUG, listStores } from "@/lib/stores";
 
 export const dynamic = "force-dynamic";
 
-const houndstooth = patternCss({ primary: "#111111", accent: "#b91c1c", background: "#faf9f6", text: "#111111", pattern: "houndstooth" }, 28);
 
 export default async function Home() {
   const stores = await listStores();
   return (
     <div className="min-h-screen">
-      <header style={{ backgroundImage: houndstooth }}>
+      <header className="bg-cover bg-center" style={{ backgroundImage: 'url("/brand/landing-houndstooth.webp")', backgroundColor: "#111111" }}>
         <div className="mx-auto max-w-6xl px-4 py-20">
           <div className="max-w-2xl rounded-2xl bg-[#faf9f6] p-8 shadow-xl sm:p-10">
             <div className="text-xs uppercase tracking-[0.3em] text-neutral-500">Curatique</div>
@@ -21,7 +20,7 @@ export default async function Home() {
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href={`/s/${FLAGSHIP_SLUG}`} className="rounded-md bg-black px-5 py-3 text-sm font-semibold text-white hover:bg-neutral-800">
-                Shop the Houndstooth flagship
+                Shop Houndstooth etc.
               </Link>
               <Link href="/founder" className="rounded-md border border-black px-5 py-3 text-sm font-semibold hover:bg-black hover:text-white">
                 Launch your own store
@@ -49,7 +48,10 @@ export default async function Home() {
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {stores.map((s) => (
             <div key={s.slug} className="overflow-hidden rounded-xl border border-black/10 bg-white">
-              <div className="h-16" style={{ backgroundImage: patternCss(s.theme), backgroundColor: s.theme.primary }} />
+              <div
+                className="h-16 bg-cover bg-center"
+                style={{ backgroundImage: s.heroImage ? `url("${s.heroImage}")` : patternCss(s.theme), backgroundColor: s.theme.primary }}
+              />
               <div className="p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-display text-xl">{s.name}</h3>
